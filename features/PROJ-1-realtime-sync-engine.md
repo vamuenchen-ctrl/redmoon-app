@@ -368,15 +368,31 @@ Keine neuen Packages noetig:
 - [x] `speicherLocal.js` unveraendert
 - [x] Gast-Modus nicht beeintraechtigt
 
+#### BUG-5: Timezone-Shift bei Cross-Device Sync — Datum verschiebt sich um einen Tag ✅ FIXED
+
+- **Severity:** High
+- **Gefunden:** Manueller Cross-Device-Test (2026-02-11)
+- **Symptom:** Chronik-Eintrag fuer 9.2.2026 auf Device 2 erstellt → erscheint als 8.2.2026 auf Device 1
+- **Root Cause:** 5 Datums-Konvertierungsfunktionen verwendeten UTC statt lokale Zeitzone:
+  1. `isoAlsDatum()` in speicherSupabase.js: `new Date("2026-02-09")` wird laut ECMAScript als UTC-Mitternacht geparst
+  2. `datumAlsISO()` in speicherSupabase.js: `.toISOString().slice(0,10)` gibt UTC-Datum zurueck
+  3. `schluesselVonDatum()` in mergeLogik.js: selbes Problem mit `.toISOString().slice(0,10)`
+  4. `datumZuString()` in speicherLocal.js: `.toISOString()` serialisiert als UTC
+  5. `stringZuDatum()` in speicherLocal.js: `new Date(str)` parst date-only Strings als UTC
+- **Fix:** Alle 5 Funktionen verwenden jetzt lokale Zeitzone (`getFullYear/getMonth/getDate` bzw. `new Date(y, m-1, d)`)
+- **Betroffene Spalten:** Alle `date`-Spalten (chronik.datum, korrekturen.datum, zyklushistorie.startdatum, tageskarten.datum, zyklusdaten.zyklus_start)
+- **Tests:** 196/196 bestanden, Build OK
+
 ### Summary
 
 - ✅ **10/10 Acceptance Criteria erfuellt**
-- ✅ **4/4 Bugs gefixt** (0 offen)
+- ✅ **5/5 Bugs gefixt** (0 offen)
 - ✅ **Security: Keine Luecken gefunden**
-- ✅ **Regression: 126 Tests bestanden, Build OK**
+- ✅ **Regression: 196 Tests bestanden, Build OK**
 
 ### Recommendation
 
 **Feature ist production-ready.** Vor Deployment:
 1. Supabase Realtime fuer alle 7 Tabellen im Dashboard aktivieren
 2. Live Cross-Device-Test empfohlen (AC-2 Latenz verifizieren)
+3. Nach Deploy: Cross-Device-Sync nochmal testen (BUG-5 Timezone-Fix verifizieren)
