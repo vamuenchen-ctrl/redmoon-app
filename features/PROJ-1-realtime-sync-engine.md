@@ -390,9 +390,31 @@ Keine neuen Packages noetig:
 - ✅ **Security: Keine Luecken gefunden**
 - ✅ **Regression: 196 Tests bestanden, Build OK**
 
+#### BUG-6: Cross-Device-Loeschung wird rueckgaengig gemacht (Daten tauchen wieder auf) — FIXED
+
+- **Severity:** High
+- **Gefunden:** 2026-02-11 (QA PROJ-4)
+- **Szenario:**
+  1. Nutzerin ist auf Geraet A und Geraet B eingeloggt
+  2. Auf Geraet A: "Abmelden und alle Daten loeschen"
+  3. Cloud-Daten werden geloescht
+  4. Geraet B empfaengt DELETE-Events via Realtime
+  5. SyncEngine auf Geraet B: Merge (leere Cloud vs. lokale Daten) → lokal gewinnt → Daten werden wieder hochgeladen
+  6. **Ergebnis: Daten sind wieder da!**
+- **Ursache (3 Probleme):**
+  1. `signOut()` invalidiert nur lokale Session, nicht Geraet B → SyncEngine laeuft weiter
+  2. Merge-Logik behandelt "Cloud leer" als "Cloud aelter" → lokale Daten gewinnen → Re-Upload
+  3. Keine Erkennung von absichtlicher Loeschung vs. fehlenden Daten
+- **Fix (4 Dateien):**
+  1. `speicherSupabase.js:loescheAlleDaten()` — Zyklusdaten zuruecksetzen statt loeschen (ersteinrichtung=false mit frischen Zeitstempeln als Loeschungs-Marker)
+  2. `AuthContext.jsx:abmelden()` — Neuer Parameter `{ global: true }` fuer `signOut({ scope: 'global' })` (invalidiert alle Sessions auf allen Geraeten)
+  3. `CloudBanner.jsx:abmeldenUndLoeschen()` — Nutzt `abmelden({ global: true })`
+  4. `SyncEngineContext.jsx:vollstaendigerAbgleich()` — Erkennt Cross-Device-Loeschung: Wenn Cloud ersteinrichtung=false, lokal=true, und synced-Flag gesetzt → lokale Daten loeschen statt re-uploaden
+
 ### Recommendation
 
 **Feature ist production-ready.** Vor Deployment:
 1. Supabase Realtime fuer alle 7 Tabellen im Dashboard aktivieren
 2. Live Cross-Device-Test empfohlen (AC-2 Latenz verifizieren)
 3. Nach Deploy: Cross-Device-Sync nochmal testen (BUG-5 Timezone-Fix verifizieren)
+4. Cross-Device-Loeschung testen (BUG-6 Fix verifizieren)
