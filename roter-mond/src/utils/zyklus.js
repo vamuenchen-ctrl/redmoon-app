@@ -56,7 +56,7 @@ export const PHASEN_INFO = {
   zauberin: {
     kurzname: 'Zauberin',
     schluessel: 'zauberin',
-    symbol: '🌖',
+    symbol: '🌗',
     farbe: '#C94963',       // Lebhaftes Rosa
     farbeHex: '#C94963',
     farbeBgHex: '#F7D0D3',  // RINGANA Zartrosa

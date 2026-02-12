@@ -852,7 +852,22 @@ function PhasenBalken({ zyklusLaenge, angepassteGrenzen, grenzenZurueckgesetzt, 
               const currentOffset = -winkelOffset
               const meta = PHASEN_INFO[g.phase]
 
-              // Segment
+              // Segment-Rand (kräftige Archetyp-Farbe)
+              elemente.push(
+                <circle
+                  key={`border-${g.phase}`}
+                  cx={cx}
+                  cy={cy}
+                  r={radius}
+                  fill="none"
+                  stroke={meta.farbeHex}
+                  strokeWidth="24"
+                  strokeDasharray={`${segmentLaenge} ${umfang - segmentLaenge}`}
+                  strokeDashoffset={currentOffset}
+                  transform={`rotate(-90 ${cx} ${cy})`}
+                />
+              )
+              // Segment-Füllung (pastell)
               elemente.push(
                 <circle
                   key={g.phase}
@@ -860,8 +875,8 @@ function PhasenBalken({ zyklusLaenge, angepassteGrenzen, grenzenZurueckgesetzt, 
                   cy={cy}
                   r={radius}
                   fill="none"
-                  stroke={meta.farbeHex}
-                  strokeWidth="22"
+                  stroke={meta.farbeBgHex}
+                  strokeWidth="20"
                   strokeDasharray={`${segmentLaenge} ${umfang - segmentLaenge}`}
                   strokeDashoffset={currentOffset}
                   transform={`rotate(-90 ${cx} ${cy})`}
@@ -887,6 +902,7 @@ function PhasenBalken({ zyklusLaenge, angepassteGrenzen, grenzenZurueckgesetzt, 
                     textAnchor={textAnchor}
                     dominantBaseline="central"
                     className="phasenkreis-ext-name"
+                    fill={meta.farbeHex}
                   >
                     {meta.symbol} {meta.kurzname}
                   </text>
@@ -903,6 +919,52 @@ function PhasenBalken({ zyklusLaenge, angepassteGrenzen, grenzenZurueckgesetzt, 
               )
 
               winkelOffset += segmentLaenge
+            })
+
+            // Trennlinien zwischen Segmenten (je 2 pro Grenze: Farbe beider Nachbarn)
+            const innerR = radius - 10
+            const outerR = radius + 10
+            const trennAbstand = 0.012 // Winkel-Offset in Radiant (~0.7°)
+            let trennOffset = 0
+            grenzen.forEach((g, i) => {
+              const winkel = (trennOffset / umfang) * 2 * Math.PI - Math.PI / 2
+              const vorher = grenzen[(i - 1 + grenzen.length) % grenzen.length]
+              const metaVorher = PHASEN_INFO[vorher.phase]
+              const metaNachher = PHASEN_INFO[g.phase]
+
+              // Linie links (Farbe des vorherigen Segments)
+              const w1 = winkel - trennAbstand
+              elemente.push(
+                <line
+                  key={`trenn-l-${g.phase}`}
+                  x1={cx + innerR * Math.cos(w1)} y1={cy + innerR * Math.sin(w1)}
+                  x2={cx + outerR * Math.cos(w1)} y2={cy + outerR * Math.sin(w1)}
+                  stroke={metaVorher.farbeHex}
+                  strokeWidth="1.5"
+                />
+              )
+              // Weiße Trennlinie in der Mitte
+              elemente.push(
+                <line
+                  key={`trenn-w-${g.phase}`}
+                  x1={cx + innerR * Math.cos(winkel)} y1={cy + innerR * Math.sin(winkel)}
+                  x2={cx + outerR * Math.cos(winkel)} y2={cy + outerR * Math.sin(winkel)}
+                  stroke="#FFFFFF"
+                  strokeWidth="1"
+                />
+              )
+              // Linie rechts (Farbe des nächsten Segments)
+              const w2 = winkel + trennAbstand
+              elemente.push(
+                <line
+                  key={`trenn-r-${g.phase}`}
+                  x1={cx + innerR * Math.cos(w2)} y1={cy + innerR * Math.sin(w2)}
+                  x2={cx + outerR * Math.cos(w2)} y2={cy + outerR * Math.sin(w2)}
+                  stroke={metaNachher.farbeHex}
+                  strokeWidth="1.5"
+                />
+              )
+              trennOffset += (g.laenge / zyklusLaenge) * umfang
             })
 
             return elemente

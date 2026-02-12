@@ -672,7 +672,6 @@
 .phasenkreis-ext-name {
   font-size: var(--text-3xs);
   font-weight: 700;
-  fill: var(--color-text);
   font-family: inherit;
 }
 
