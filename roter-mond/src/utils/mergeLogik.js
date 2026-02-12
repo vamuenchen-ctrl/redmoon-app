@@ -396,5 +396,14 @@ export function mergeAlleStores(lokaleDaten, lokaleTs, cloudDaten, cloudTs) {
       grenzen: grenzen.zeitstempel,
     },
     hatGemerged,
+    geaenderteStores: {
+      zyklusdaten: zyklus.geaendert,
+      korrekturen: korrekturen.geaendert,
+      zyklushistorie: historie.geaendert,
+      chronik: chronik.geaendert,
+      tageskarten: tageskarten.geaendert,
+      zyklustyp_hinweis: hinweis.geaendert,
+      angepasste_grenzen: grenzen.geaendert,
+    },
   }
 }

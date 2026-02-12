@@ -370,6 +370,14 @@ describe('mergeAlleStores', () => {
     expect(ergebnis.daten.korrekturen).toHaveLength(1)
     // Grenzen: Cloud gewinnt (hat Zeitstempel)
     expect(ergebnis.daten.grenzen).toEqual({ phase1: 7 })
+    // geaenderteStores: nur tatsächlich geänderte Stores sind true
+    expect(ergebnis.geaenderteStores.zyklusdaten).toBe(true)
+    expect(ergebnis.geaenderteStores.korrekturen).toBe(true)
+    expect(ergebnis.geaenderteStores.zyklushistorie).toBe(false)
+    expect(ergebnis.geaenderteStores.chronik).toBe(false)
+    expect(ergebnis.geaenderteStores.tageskarten).toBe(false)
+    expect(ergebnis.geaenderteStores.zyklustyp_hinweis).toBe(false)
+    expect(ergebnis.geaenderteStores.angepasste_grenzen).toBe(true)
   })
 
   it('gibt hatGemerged: false wenn alles identisch', () => {
@@ -395,5 +403,9 @@ describe('mergeAlleStores', () => {
     const ergebnis = mergeAlleStores(daten, ts, daten, ts)
 
     expect(ergebnis.hatGemerged).toBe(false)
+    // Alle Stores unverändert
+    expect(ergebnis.geaenderteStores.zyklusdaten).toBe(false)
+    expect(ergebnis.geaenderteStores.korrekturen).toBe(false)
+    expect(ergebnis.geaenderteStores.tageskarten).toBe(false)
   })
 })

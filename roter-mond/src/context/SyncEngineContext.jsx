@@ -148,40 +148,60 @@ function speichereMergeErgebnis(ergebnis) {
 }
 
 /**
- * Pusht das Merge-Ergebnis zurück an Supabase (alle 7 Stores).
+ * Pusht das Merge-Ergebnis zurück an Supabase – nur geänderte Stores.
  */
 async function pusheMergeZurCloud(userId, ergebnis) {
-  const { daten, zeitstempel } = ergebnis
+  const { daten, zeitstempel, geaenderteStores } = ergebnis
 
-  await Promise.all([
-    cloud.speichereZyklusdaten(userId, {
+  const aufgaben = []
+
+  if (geaenderteStores.zyklusdaten) {
+    aufgaben.push(cloud.speichereZyklusdaten(userId, {
       ...daten.zyklusdaten,
       feldZeitstempel: zeitstempel.zyklusdaten,
-    }),
-    cloud.speichereKorrekturen(userId, daten.korrekturen.map((k) => ({
+    }))
+  }
+  if (geaenderteStores.korrekturen) {
+    aufgaben.push(cloud.speichereKorrekturen(userId, daten.korrekturen.map((k) => ({
       ...k,
       feldZeitstempel: { _updated: zeitstempel.korrekturen[schluesselVonDatum(k.datum)] || '' },
-    }))),
-    cloud.speichereZyklushistorie(userId, daten.historie.map((h) => ({
+    }))))
+  }
+  if (geaenderteStores.zyklushistorie) {
+    aufgaben.push(cloud.speichereZyklushistorie(userId, daten.historie.map((h) => ({
       ...h,
       feldZeitstempel: { _updated: zeitstempel.historie[schluesselVonDatum(h.startdatum)] || '' },
-    }))),
-    cloud.speichereChronik(userId, daten.chronik.map((e) => ({
+    }))))
+  }
+  if (geaenderteStores.chronik) {
+    aufgaben.push(cloud.speichereChronik(userId, daten.chronik.map((e) => ({
       ...e,
       feldZeitstempel: zeitstempel.chronik[schluesselVonDatum(e.datum)] || {},
-    }))),
-    cloud.speichereTageskarten(userId, daten.tageskarten.map((k) => ({
+    }))))
+  }
+  if (geaenderteStores.tageskarten) {
+    aufgaben.push(cloud.speichereTageskarten(userId, daten.tageskarten.map((k) => ({
       ...k,
       feldZeitstempel: { _updated: zeitstempel.tageskarten[schluesselVonDatum(k.datum)] || '' },
-    }))),
-    cloud.speichereZyklustypHinweis(userId, {
+    }))))
+  }
+  if (geaenderteStores.zyklustyp_hinweis) {
+    aufgaben.push(cloud.speichereZyklustypHinweis(userId, {
       ...daten.hinweis,
       feldZeitstempel: zeitstempel.hinweis,
-    }),
-    daten.grenzen
-      ? cloud.speichereAngepassteGrenzen(userId, daten.grenzen, { _updated: zeitstempel.grenzen })
-      : cloud.setzeGrenzenZurueck(userId),
-  ])
+    }))
+  }
+  if (geaenderteStores.angepasste_grenzen) {
+    aufgaben.push(
+      daten.grenzen
+        ? cloud.speichereAngepassteGrenzen(userId, daten.grenzen, { _updated: zeitstempel.grenzen })
+        : cloud.setzeGrenzenZurueck(userId),
+    )
+  }
+
+  if (aufgaben.length > 0) {
+    await Promise.all(aufgaben)
+  }
 }
 
 /**
@@ -506,7 +526,13 @@ export function SyncEngineProvider({ children }) {
 
       // Falls Merge Änderungen ergab, an Cloud zurückpushen
       if (ergebnis.hatGemerged) {
-        TABELLEN.forEach((t) => registriereEigenenSchreibvorgang(t))
+        // Nur geänderte Stores als eigene Schreibvorgänge registrieren,
+        // damit Realtime-Events für unveränderte Stores nicht unterdrückt werden
+        for (const t of TABELLEN) {
+          if (ergebnis.geaenderteStores[t]) {
+            registriereEigenenSchreibvorgang(t)
+          }
+        }
         await pusheMergeZurCloud(uid, ergebnis)
         zeigeMergeHinweis()
       }
