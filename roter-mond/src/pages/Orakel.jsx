@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import {
   ladeZyklusdaten,
   ladeKorrekturen,
@@ -35,9 +36,13 @@ function Orakel() {
   const [karteKlein, setKarteKlein] = useState(false)
   // Phasenkontext
   const [aktuellePhase, setAktuellePhase] = useState(null)
+  const [eingerichtet, setEingerichtet] = useState(true)
   const detailsRef = useRef(null)
 
   useEffect(() => {
+    const daten = ladeZyklusdaten()
+    setEingerichtet(daten.ersteinrichtungAbgeschlossen)
+
     // Prüfe ob heute schon eine Karte gezogen wurde
     const heutige = ladeHeutigeTageskarte()
     if (heutige) {
@@ -50,7 +55,6 @@ function Orakel() {
     }
 
     // Aktuelle Phase laden für Kontextbezug
-    const daten = ladeZyklusdaten()
     if (daten.ersteinrichtungAbgeschlossen && daten.zyklusStart) {
       const korrekturen = ladeKorrekturen()
       const gespeicherteGrenzen = ladeAngepassteGrenzen()
@@ -113,6 +117,26 @@ function Orakel() {
     const kartenGenitiv = PHASEN_KASUS[karte.archetyp]?.genitiv
     const kartenArchetypName = kartenGenitiv || ARCHETYP_META[karte.archetyp]?.name || karte.archetyp
     return `Du bist gerade in der Phase ${phasenGenitiv}. Diese Karte bringt die Energie ${kartenArchetypName} in deine aktuelle Phase.`
+  }
+
+  if (!eingerichtet) {
+    return (
+      <div className="page einstellungen-page">
+        <div className="onboarding-schritt">
+          <h1>Willkommen bei Roter Mond</h1>
+          <p className="onboarding-text">
+            Diese App begleitet dich durch deinen Zyklus und hilft dir, die Kraft deiner vier
+            inneren Archetypen zu entdecken.
+          </p>
+          <p className="onboarding-text">
+            Richte zuerst deinen Zyklus ein, um tägliche Empfehlungen zu erhalten.
+          </p>
+          <Link to="/einstellungen" className="btn-primary">
+            Los geht's
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
