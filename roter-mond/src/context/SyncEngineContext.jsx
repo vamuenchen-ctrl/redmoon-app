@@ -305,10 +305,12 @@ async function tabelleZusammenfuehren(tabelle, userId) {
       }
       const lokalEntries = local.ladeTageskarten()
       const lokalTs = local.ladeZeitstempel('TAGESKARTEN')
+      console.log(`[SyncEngine] 🃏 tageskarten merge: cloud=${cloudEntries.length}, lokal=${lokalEntries.length}`)
       const result = mergeArrayNachSchluessel(
         lokalEntries, lokalTs, ohneTs(cloudEntries), cloudTs,
         (e) => schluesselVonDatum(e.datum),
       )
+      console.log(`[SyncEngine] 🃏 tageskarten merge result: daten=${result.daten.length}, geaendert=${result.geaendert}`)
       local.speichereTageskarten(result.daten)
       local.speichereZeitstempel('TAGESKARTEN', result.zeitstempel)
       if (result.geaendert) {
@@ -587,15 +589,20 @@ export function SyncEngineProvider({ children }) {
         }
       }
 
+      console.log(`[SyncEngine] 🔄 tabelleNeuLaden: ${tabelle}`)
       const geaendert = await tabelleZusammenfuehren(tabelle, uid)
+      console.log(`[SyncEngine] 🔄 tabelleNeuLaden: ${tabelle} → geaendert=${geaendert}`)
       if (geaendert) {
         registriereEigenenSchreibvorgang(tabelle)
         zeigeMergeHinweis()
       }
+    } catch (err) {
+      console.error(`[SyncEngine] ❌ Tabelle ${tabelle} neu laden fehlgeschlagen:`, err)
+    } finally {
+      // syncVersion IMMER erhöhen (auch bei Fehler), damit UI den
+      // aktuellen localStorage-Stand anzeigt
       setSyncVersion((v) => v + 1)
       setLetzterSync(new Date())
-    } catch (err) {
-      console.error(`[SyncEngine] Tabelle ${tabelle} neu laden fehlgeschlagen:`, err)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -618,8 +625,11 @@ export function SyncEngineProvider({ children }) {
       if (eigenIndex >= 0) {
         // Eigenes Echo → konsumieren und ignorieren
         eigene.splice(eigenIndex, 1)
+        console.log(`[SyncEngine] ⏭ Eigenes Echo ignoriert: ${tabelle}`)
         return
       }
+
+      console.log(`[SyncEngine] 📡 Fremdes Event empfangen: ${tabelle}`)
 
       // Fremdes Event → Tabelle mit Debounce nachladen + mergen
       const timers = debounceTimersRef.current

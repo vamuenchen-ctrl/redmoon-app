@@ -303,12 +303,11 @@ export function speichereTageskarte(datum, kartenId) {
 }
 
 export function ladeHeutigeTageskarte() {
-  const heute = new Date()
-  const heuteStr = heute.toISOString().slice(0, 10)
+  const heuteStr = datumZuString(new Date())
   const karten = ladeTageskarten()
 
   return karten.find(
-    (k) => datumZuString(k.datum) && datumZuString(k.datum).slice(0, 10) === heuteStr,
+    (k) => datumZuString(k.datum) === heuteStr,
   ) || null
 }
 

@@ -40,8 +40,10 @@ function Orakel() {
   useEffect(() => {
     // Prüfe ob heute schon eine Karte gezogen wurde
     const heutige = ladeHeutigeTageskarte()
+    console.log(`[Orakel] syncVersion=${syncVersion}, heutigeTageskarte=`, heutige)
     if (heutige) {
       const karte = orakelkarten.find((k) => k.id === heutige.kartenId)
+      console.log(`[Orakel] Karte gefunden: ${karte?.id || 'NICHT GEFUNDEN'} (kartenId=${heutige.kartenId})`)
       setGezogeneKarte(karte || null)
       setBereitsGezogen(true)
       setFlipAktiv(true)
